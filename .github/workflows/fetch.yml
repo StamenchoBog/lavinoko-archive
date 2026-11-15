@@ -1,0 +1,23 @@
+name: Fetch forecast
+
+# The schedule for the LavinOko forecast archive. The work itself is done by
+# .github/workflows/forecast.yml in StamenchoBog/lavinoko, which commits the result here.
+on:
+  schedule:
+    # 06:17 and 15:17 UTC = 07:17 and 16:17 in Skopje in winter (08:17 and 17:17 in summer), ahead
+    # of the 08:00 / 17:00 issues because GitHub often starts scheduled runs late. Off the full hour,
+    # when GitHub is busiest. October to June only: the months with snow.
+    - cron: "17 6,15 * 1-6,10-12 *"
+  workflow_dispatch: # "Run workflow" button, for a test or a missed run
+
+# Runs are queued one after another, never cancelled.
+concurrency:
+  group: archive
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    uses: StamenchoBog/lavinoko/.github/workflows/forecast.yml@main
