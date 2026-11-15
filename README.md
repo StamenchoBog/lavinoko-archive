@@ -1,7 +1,7 @@
-# LavinOko Forecast Archive
+# LavinOko forecast archive
 
 Every mountain weather forecast [LavinOko](https://github.com/StamenchoBog/lavinoko) issued, stored exactly as
-issued, twice a day from October to June. It exists so the forecasts can be checked against what actually happened
+issued, twice a day from October to June and once a month in summer. It exists so the forecasts can be checked against what actually happened
 on the mountain, and so the results can be published.
 
 These are **weather forecast model values, not measurements and not avalanche danger ratings.**

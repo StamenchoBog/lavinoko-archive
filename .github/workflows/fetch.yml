@@ -4,10 +4,15 @@ name: Fetch forecast
 # .github/workflows/forecast.yml in StamenchoBog/lavinoko, which commits the result here.
 on:
   schedule:
-    # 06:17 and 15:17 UTC = 07:17 and 16:17 in Skopje in winter (08:17 and 17:17 in summer), ahead
-    # of the 08:00 / 17:00 issues because GitHub often starts scheduled runs late. Off the full hour,
-    # when GitHub is busiest. October to June only: the months with snow.
+    # Main runs: 06:17 and 15:17 UTC = 07:17 and 16:17 in Skopje in winter (08:17 and 17:17 in summer),
+    # ahead of the 08:00 / 17:00 issues because GitHub often starts scheduled runs late. Off the full
+    # hour, when GitHub is busiest. October to June: the months with snow.
     - cron: "17 6,15 * 1-6,10-12 *"
+    # Backup runs, 90 minutes later: fetch only if the main run was skipped by GitHub or failed.
+    - cron: "47 7,16 * 1-6,10-12 *"
+    # Once a month in summer. GitHub switches a schedule off after 60 days without activity in this
+    # repository; July to September would otherwise be 92 days. Also gives a small summer baseline.
+    - cron: "17 6 1 7-9 *"
   workflow_dispatch: # "Run workflow" button, for a test or a missed run
 
 # Runs are queued one after another, never cancelled.
@@ -21,3 +26,6 @@ permissions:
 jobs:
   fetch:
     uses: StamenchoBog/lavinoko/.github/workflows/forecast.yml@main
+    with:
+      # Must match the backup cron above exactly.
+      only_if_missing: ${{ github.event.schedule == '47 7,16 * 1-6,10-12 *' }}
