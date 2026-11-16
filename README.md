@@ -33,8 +33,9 @@ run = json.loads(gzip.decompress(open("weather/2026/11/2026-11-15T06Z.json.gz", 
 
 ## How it is made
 
-`.github/workflows/fetch.yml` runs on a schedule and calls the workflow in the LavinOko repository, which fetches
-the forecast and commits the file here. Nothing else writes to this repository.
+`.github/workflows/fetch.yml` calls the workflow in the LavinOko repository, which fetches the forecast and commits
+the file here. An outside cron service starts it on time; GitHub's own schedule is the backup. Nothing else writes
+to this repository.
 
 ## Licence
 

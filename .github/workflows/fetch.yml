@@ -2,18 +2,25 @@ name: Fetch forecast
 
 # The schedule for the LavinOko forecast archive. The work itself is done by
 # .github/workflows/forecast.yml in StamenchoBog/lavinoko, which commits the result here.
+#
+# On time: an outside cron service (cron-job.org) starts this workflow through the GitHub API
+# (workflow_dispatch) at 06:17 and 15:17 UTC, ahead of the 08:00 / 17:00 Skopje issues in winter. GitHub's
+# own schedule below is only a backup: it often starts runs hours late, or not at all.
 on:
   schedule:
-    # Main runs: 06:17 and 15:17 UTC = 07:17 and 16:17 in Skopje in winter (08:17 and 17:17 in summer),
-    # ahead of the 08:00 / 17:00 issues because GitHub often starts scheduled runs late. Off the full
-    # hour, when GitHub is busiest. October to June: the months with snow.
-    - cron: "17 6,15 * 1-6,10-12 *"
-    # Backup runs, 90 minutes later: fetch only if the main run was skipped by GitHub or failed.
+    # Backups. Every scheduled run fetches only if nothing is archived yet for the current slot (since
+    # 06:00 or 15:00 UTC), so a late one does no harm. October to June: the months with snow.
+    - cron: "47 6,15 * 1-6,10-12 *"
     - cron: "47 7,16 * 1-6,10-12 *"
     # Once a month in summer. GitHub switches a schedule off after 60 days without activity in this
     # repository; July to September would otherwise be 92 days. Also gives a small summer baseline.
     - cron: "17 6 1 7-9 *"
-  workflow_dispatch: # "Run workflow" button, for a test or a missed run
+  workflow_dispatch: # the outside cron service, and the "Run workflow" button
+    inputs:
+      only_if_missing:
+        description: Fetch only if nothing is archived yet for the current slot
+        type: boolean
+        default: false
 
 # Runs are queued one after another, never cancelled.
 concurrency:
@@ -27,5 +34,4 @@ jobs:
   fetch:
     uses: StamenchoBog/lavinoko/.github/workflows/forecast.yml@main
     with:
-      # Must match the backup cron above exactly.
-      only_if_missing: ${{ github.event.schedule == '47 7,16 * 1-6,10-12 *' }}
+      only_if_missing: ${{ github.event_name == 'schedule' || inputs.only_if_missing == true }}
