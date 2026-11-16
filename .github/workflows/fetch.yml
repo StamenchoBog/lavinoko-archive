@@ -3,9 +3,9 @@ name: Fetch forecast
 # The schedule for the LavinOko forecast archive. The work itself is done by
 # .github/workflows/forecast.yml in StamenchoBog/lavinoko, which commits the result here.
 #
-# On time: an outside cron service (cron-job.org) starts this workflow through the GitHub API
-# (workflow_dispatch) at 06:17 and 15:17 UTC, ahead of the 08:00 / 17:00 Skopje issues in winter. GitHub's
-# own schedule below is only a backup: it often starts runs hours late, or not at all.
+# On time: a Cloudflare Worker (workers/archive-trigger/ in StamenchoBog/lavinoko) starts this workflow through
+# the GitHub API (workflow_dispatch) at 06:17 and 15:17 UTC, ahead of the 08:00 / 17:00 Skopje issues in winter.
+# GitHub's own schedule below is only a backup: it often starts runs hours late, or not at all.
 on:
   schedule:
     # Backups. Every scheduled run fetches only if nothing is archived yet for the current slot (since
@@ -15,7 +15,7 @@ on:
     # Once a month in summer. GitHub switches a schedule off after 60 days without activity in this
     # repository; July to September would otherwise be 92 days. Also gives a small summer baseline.
     - cron: "17 6 1 7-9 *"
-  workflow_dispatch: # the outside cron service, and the "Run workflow" button
+  workflow_dispatch: # the Cloudflare Worker, and the "Run workflow" button
     inputs:
       only_if_missing:
         description: Fetch only if nothing is archived yet for the current slot
