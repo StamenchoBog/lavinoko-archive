@@ -37,9 +37,12 @@ run = json.loads(gzip.decompress(open("weather/2026/11/2026-11-15T06Z.json.gz", 
 the file here. A Cloudflare Worker (`workers/archive-trigger/` in LavinOko) starts it on time; GitHub's own schedule is the backup. Nothing else writes
 to this repository.
 
+`.github/workflows/check.yml` checks once a day that every forecast was archived, on time, and reports any missing
+or late run in an issue here. Its script and tests are in `.github/scripts/`; it does not depend on LavinOko.
+
 ## Licence
 
 - **Data** (`weather/`): weather data by [Open-Meteo.com](https://open-meteo.com) (CC BY 4.0), from the models of
   DWD (ICON-EU), NOAA (GFS) and Météo-France. Shared under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
   with that attribution. It was fetched under Open-Meteo's free non-commercial terms and is for non-commercial use.
-- **Workflow file** (`.github/`): MIT, see `LICENSE`. The MIT licence does not cover the data.
+- **Workflows and scripts** (`.github/`): MIT, see `LICENSE`. The MIT licence does not cover the data.

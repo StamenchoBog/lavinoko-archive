@@ -1,0 +1,75 @@
+name: Check archive
+
+# Once a day: is every forecast slot archived, and on time? New problems go into one issue here
+# ("Forecast archive: missing or late runs"): a new issue if none is open, else a comment on it. GitHub
+# notifies the owner of both. Close the issue once read; the next problem opens a new one.
+#
+# Kept here, independent of the LavinOko repository and of the Cloudflare Worker it watches, so it still
+# reports when either of them breaks. What counts as missing or late: .github/scripts/check_archive.py.
+#
+# GitHub's schedule may start this hours late or skip a day. That is fine: each run looks back 72 hours,
+# and a slot is reported only once.
+on:
+  schedule:
+    - cron: "37 7 * * *" # after the 06:00 UTC slot's on-time run and both backups
+  workflow_dispatch: # the "Run workflow" button
+
+permissions: {}
+
+jobs:
+  check:
+    name: Check the archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      # The script and file names only: no forecast files are downloaded.
+      - name: Check out the script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: .github/scripts/
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Test the check
+        run: python3 -m unittest discover .github/scripts
+
+      - name: Find missing and late slots
+        run: |
+          git ls-tree -r --name-only HEAD weather | python3 .github/scripts/check_archive.py > found.txt
+          cat found.txt
+
+      - name: Report new problems in an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: "Forecast archive: missing or late runs"
+        run: |
+          [ -s found.txt ] || { echo "All slots archived on time."; exit 0; }
+          issue=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title \
+            --jq "map(select(.title == env.TITLE)) | .[0].number // empty")
+          # Each slot is reported once: drop lines already in the open issue or its comments.
+          if [ -n "$issue" ]; then
+            gh issue view "$issue" --json body,comments --jq '.body, .comments[].body' > reported.txt
+            grep -vxFf <(tr -d '\r' < reported.txt | sed 's/^- //') found.txt > new.txt || true
+          else
+            cp found.txt new.txt
+          fi
+          [ -s new.txt ] || { echo "Already reported."; exit 0; }
+          {
+            sed 's/^/- /' new.txt
+            echo
+            echo "**missing**: that forecast is lost for verification. **late**: GitHub's backup schedule archived it,"
+            echo "so the Cloudflare Worker did not start the run: check Workers → lavinoko-archive-trigger → Logs, and"
+            echo "whether its GITHUB_TOKEN has expired (StamenchoBog/lavinoko, workers/archive-trigger/README.md)."
+          } > message.md
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body-file message.md
+          else
+            gh issue create --title "$TITLE" --body-file message.md
+          fi
+          echo "::warning::$(wc -l < new.txt | tr -d ' ') new archive problem(s) reported"
